@@ -9,31 +9,44 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Database Connection
-// This uses environment variables which we will set up in the next step
+// Database Connection with Aiven SSL requirements
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: process.env.DB_PORT || 3306
+    port: Number(process.env.DB_PORT) || 18844,
+    ssl: {
+        rejectUnauthorized: false 
+    }
 });
 
-// Test DB Connection
 db.connect((err) => {
     if (err) {
-        console.error('Database connection failed: ' + err.stack);
+        console.error('Aiven connection failed: ' + err.stack);
         return;
     }
     console.log('Connected to MySQL Database.');
+
+    // Auto-create table
+    const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS moods (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        mood_text TEXT NOT NULL,
+        response TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`;
+
+    db.query(createTableQuery, (err) => {
+        if (err) console.log("Table check error:", err);
+        else console.log("Table 'moods' is confirmed and ready!");
+    });
 });
 
-// API Route for Mood Submission
+// API Route
 app.post('/mood', (req, res) => {
     const { mood } = req.body;
-    
-    // Simple "AI" logic for the lab
-    const aiResponse = `I hear that you are feeling ${mood}. Thanks for sharing!`;
+    const aiResponse = `I hear that you are feeling ${mood}. Thanks for sharing with me!`;
     
     const query = "INSERT INTO moods (mood_text, response) VALUES (?, ?)";
     db.query(query, [mood, aiResponse], (err, result) => {
@@ -45,8 +58,7 @@ app.post('/mood', (req, res) => {
     });
 });
 
-// Start Server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000; // Render uses 10000 by default
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
