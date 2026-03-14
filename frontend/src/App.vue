@@ -1,18 +1,24 @@
 <template>
   <div class="container">
-    <h1>AI Mood Tracker</h1>
-    <p>How are you feeling today?</p>
-    
-    <div class="input-group">
-      <input v-model="moodInput" placeholder="Enter your mood..." @keyup.enter="sendMood" />
-      <button @click="sendMood" :disabled="loading">
-        {{ loading ? 'Asking AI...' : 'Submit' }}
-      </button>
-    </div>
+    <div class="card">
+      <h1>🌈 AI Mood Tracker</h1>
+      <p>How's your day going?</p>
+      
+      <div class="input-group">
+        <input 
+          v-model="moodInput" 
+          placeholder="e.g. Happy, stressed, excited..." 
+          @keyup.enter="sendMood"
+        />
+        <button @click="sendMood" :disabled="loading">
+          {{ loading ? 'Analyzing...' : 'Submit' }}
+        </button>
+      </div>
 
-    <div v-if="aiResponse" class="response-box">
-      <strong>AI Response:</strong>
-      <p>{{ aiResponse }}</p>
+      <div v-if="aiResponse" class="response-box">
+        <strong>AI Companion:</strong>
+        <p>{{ aiResponse }}</p>
+      </div>
     </div>
   </div>
 </template>
@@ -25,22 +31,25 @@ const aiResponse = ref('')
 const loading = ref(false)
 
 const sendMood = async () => {
-  if (!moodInput.value) return alert("Please type something!")
+  if (!moodInput.value) return alert("Please enter your mood!")
   
   loading.value = true
   try {
-    // Note: Change this URL to your Render URL after you deploy the backend!
-    const response = await fetch('http://localhost:3000/mood', {
+    // UPDATED: This now points to your live Render backend
+    // Make sure this URL matches your actual Render service name!
+    const response = await fetch('https://mood-tracker-api-80l1.onrender.com', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mood: moodInput.value })
     })
     
+    if (!response.ok) throw new Error("Backend connection failed")
+
     const data = await response.json()
     aiResponse.value = data.message
-    moodInput.value = '' // Clear input
+    moodInput.value = '' 
   } catch (error) {
-    aiResponse.value = "Error: Is your backend running?"
+    aiResponse.value = "Error: Check Aiven Firewall (0.0.0.0/0) or Render logs."
     console.error(error)
   } finally {
     loading.value = false
@@ -49,10 +58,60 @@ const sendMood = async () => {
 </script>
 
 <style scoped>
-.container { max-width: 500px; margin: 50px auto; text-align: center; font-family: sans-serif; }
-.input-group { margin-bottom: 20px; }
-input { padding: 10px; width: 60%; border: 1px solid #ccc; border-radius: 4px; }
-button { padding: 10px 20px; background-color: #42b883; color: white; border: none; border-radius: 4px; cursor: pointer; }
-button:disabled { background-color: #999; }
-.response-box { padding: 20px; background: #f0fdf4; border: 1px solid #42b883; border-radius: 8px; }
+.container { 
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+  min-height: 80vh; 
+  font-family: 'Segoe UI', sans-serif; 
+}
+.card { 
+  background: white; 
+  padding: 2rem; 
+  border-radius: 12px; 
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+  width: 100%; 
+  max-width: 400px; 
+  text-align: center; 
+}
+.input-group { 
+  margin: 20px 0; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 10px; 
+}
+input { 
+  padding: 12px; 
+  border: 2px solid #eee; 
+  border-radius: 8px; 
+  font-size: 1rem; 
+  outline: none; 
+}
+input:focus { 
+  border-color: #646cff; 
+}
+button { 
+  padding: 12px; 
+  background: #646cff; 
+  color: white; 
+  border: none; 
+  border-radius: 8px; 
+  font-weight: bold; 
+  cursor: pointer; 
+  transition: 0.3s; 
+}
+button:hover { 
+  background: #535bf2; 
+}
+button:disabled { 
+  background: #ccc; 
+}
+.response-box { 
+  margin-top: 20px; 
+  padding: 15px; 
+  background: #f9f9f9; 
+  border-left: 4px solid #646cff; 
+  border-radius: 4px; 
+  text-align: left; 
+}
 </style>
